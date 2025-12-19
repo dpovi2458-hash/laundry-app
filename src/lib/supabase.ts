@@ -1,17 +1,32 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Servicio, Pedido, Ingreso, Egreso, Configuracion } from '@/types';
 
+// Configuración de Supabase para producción
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 const isConfigured = supabaseUrl.length > 0 && supabaseAnonKey.length > 0;
 
-console.log('[Supabase] Estado:', isConfigured ? 'Configurado' : 'No configurado');
+// Solo mostrar logs en desarrollo
+if (process.env.NODE_ENV === 'development') {
+  console.log('[Supabase] Estado:', isConfigured ? 'Configurado' : 'No configurado');
+  console.log('[Supabase] URL:', supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'No definida');
+}
 
-// Crear cliente solo si está configurado
+// Crear cliente con opciones optimizadas para producción
 let supabase: SupabaseClient | null = null;
 if (isConfigured) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
+  supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+    global: {
+      headers: {
+        'x-application-name': 'lavanderia-app',
+      },
+    },
+  });
 }
 
 export { supabase };
@@ -24,25 +39,39 @@ export async function testConnection(): Promise<{ success: boolean; error?: stri
   try {
     const { data, error } = await supabase.from('servicios').select('id').limit(1);
     if (error) throw error;
-    console.log('[Supabase] Conexión exitosa');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Supabase] Conexión exitosa');
+    }
     return { success: true };
   } catch (error: unknown) {
     const err = error as { message?: string };
-    console.error('[Supabase] Error de conexión:', err);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Supabase] Error de conexión:', err);
+    }
     return { success: false, error: err.message || 'Error desconocido' };
   }
 }
 
 // ==================== SERVICIOS ====================
 export async function getServicios(): Promise<Servicio[]> {
-  if (!supabase) return [];
+  if (!supabase) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Supabase] getServicios: Cliente no inicializado');
+    }
+    return [];
+  }
   try {
     const { data, error } = await supabase
       .from('servicios')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Supabase] getServicios ERROR:', error);
+      }
+      throw error;
+    }
     
     return (data || []).map(doc => ({
       $id: doc.id,
@@ -194,7 +223,12 @@ export async function getPedidoById(id: string): Promise<Pedido | null> {
 }
 
 export async function createPedido(pedido: Omit<Pedido, '$id'>): Promise<Pedido | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Supabase] createPedido: Cliente no inicializado');
+    }
+    return null;
+  }
   try {
     const { data, error } = await supabase
       .from('pedidos')
@@ -215,7 +249,12 @@ export async function createPedido(pedido: Omit<Pedido, '$id'>): Promise<Pedido 
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Supabase] createPedido ERROR:', error);
+      }
+      throw error;
+    }
     
     return {
       $id: data.id,
