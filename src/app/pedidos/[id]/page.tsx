@@ -113,8 +113,8 @@ export default function DetallePedidoPage() {
       <div className="no-print">
         <DashboardLayout>
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3">
                 <Link
                   href="/pedidos"
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -122,24 +122,68 @@ export default function DetallePedidoPage() {
                   <FiArrowLeft className="w-5 h-5" />
                 </Link>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    Pedido {pedido.numeroFactura}
+                  <h1 className="text-lg md:text-2xl font-bold text-gray-900">
+                    {pedido.numeroFactura}
                   </h1>
-                  <p className="text-gray-500">{pedido.cliente}</p>
+                  <p className="text-sm text-gray-500">{pedido.cliente}</p>
                 </div>
               </div>
               <button
                 onClick={handlePrint}
-                className="inline-flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 md:py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
               >
                 <FiPrinter className="mr-2" />
-                Imprimir Factura
+                Imprimir
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-4">
+              {/* Info lateral - primero en móvil */}
+              <div className="space-y-4 lg:order-2">
+                <div className="bg-white rounded-xl shadow-sm p-4">
+                  <h2 className="text-base font-semibold text-gray-900 mb-3">Estado</h2>
+                  <select
+                    value={pedido.estado}
+                    onChange={(e) => handleCambiarEstado(e.target.value)}
+                    className={`w-full px-4 py-3 md:py-2 rounded-lg text-center font-medium border-0 text-base ${getEstadoColor(pedido.estado)}`}
+                  >
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en_proceso">En Proceso</option>
+                    <option value="listo">Listo</option>
+                    <option value="entregado">Entregado</option>
+                  </select>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-4 grid grid-cols-2 lg:grid-cols-1 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Cliente</p>
+                    <p className="font-medium text-sm">{pedido.cliente}</p>
+                  </div>
+                  {pedido.telefono && (
+                    <div>
+                      <p className="text-xs text-gray-500">Teléfono</p>
+                      <p className="font-medium text-sm">{pedido.telefono}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs text-gray-500">Recepción</p>
+                    <p className="font-medium text-sm">{formatFecha(pedido.fechaRecepcion)}</p>
+                  </div>
+                  {pedido.fechaEntrega && (
+                    <div>
+                      <p className="text-xs text-gray-500">Entrega</p>
+                      <p className="font-medium text-sm">{formatFecha(pedido.fechaEntrega)}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs text-gray-500">Pago</p>
+                    <p className="font-medium text-sm">{getMetodoPagoLabel(pedido.metodoPago)}</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Detalle del pedido */}
-              <div className="lg:col-span-2 space-y-4">
+              <div className="lg:col-span-2 space-y-4 lg:order-1">
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Servicios</h2>
                   <table className="w-full">
@@ -181,61 +225,11 @@ export default function DetallePedidoPage() {
                 </div>
 
                 {pedido.notas && (
-                  <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-2">Notas</h2>
-                    <p className="text-gray-600">{pedido.notas}</p>
+                  <div className="bg-white rounded-xl shadow-sm p-4">
+                    <h2 className="text-base font-semibold text-gray-900 mb-2">Notas</h2>
+                    <p className="text-gray-600 text-sm">{pedido.notas}</p>
                   </div>
                 )}
-              </div>
-
-              {/* Info lateral */}
-              <div className="space-y-4">
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Estado</h2>
-                  <select
-                    value={pedido.estado}
-                    onChange={(e) => handleCambiarEstado(e.target.value)}
-                    className={`w-full px-4 py-2 rounded-lg text-center font-medium border-0 ${getEstadoColor(pedido.estado)}`}
-                  >
-                    <option value="pendiente">Pendiente</option>
-                    <option value="en_proceso">En Proceso</option>
-                    <option value="listo">Listo</option>
-                    <option value="entregado">Entregado</option>
-                  </select>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Información</h2>
-                  
-                  <div>
-                    <p className="text-sm text-gray-500">Cliente</p>
-                    <p className="font-medium">{pedido.cliente}</p>
-                  </div>
-
-                  {pedido.telefono && (
-                    <div>
-                      <p className="text-sm text-gray-500">Teléfono</p>
-                      <p className="font-medium">{pedido.telefono}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="text-sm text-gray-500">Fecha de Recepción</p>
-                    <p className="font-medium">{formatFecha(pedido.fechaRecepcion)}</p>
-                  </div>
-
-                  {pedido.fechaEntrega && (
-                    <div>
-                      <p className="text-sm text-gray-500">Fecha de Entrega</p>
-                      <p className="font-medium">{formatFecha(pedido.fechaEntrega)}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="text-sm text-gray-500">Método de Pago</p>
-                    <p className="font-medium">{getMetodoPagoLabel(pedido.metodoPago)}</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

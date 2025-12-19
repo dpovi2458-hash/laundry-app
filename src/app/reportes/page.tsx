@@ -171,16 +171,16 @@ export default function ReportesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 no-print">
+        <div className="flex flex-col gap-3 no-print">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
-            <p className="text-gray-500">Análisis de ingresos, egresos y pedidos</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Reportes</h1>
+            <p className="text-sm text-gray-500">Análisis de ingresos y egresos</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <select
               value={mesSeleccionado}
               onChange={(e) => setMesSeleccionado(e.target.value)}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 capitalize"
+              className="flex-1 sm:flex-none px-4 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 capitalize text-base"
             >
               {meses.map((mes) => (
                 <option key={mes.value} value={mes.value} className="capitalize">
@@ -190,7 +190,7 @@ export default function ReportesPage() {
             </select>
             <button
               onClick={handlePrint}
-              className="inline-flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+              className="inline-flex items-center justify-center px-4 py-3 md:py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
             >
               <FiPrinter className="mr-2" />
               Imprimir
@@ -199,28 +199,22 @@ export default function ReportesPage() {
         </div>
 
         {/* View Type Tabs */}
-        <div className="bg-white rounded-xl shadow-sm p-1 inline-flex no-print">
+        <div className="bg-white rounded-xl shadow-sm p-1 flex no-print">
           <button
             onClick={() => setViewType('diario')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              viewType === 'diario' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${viewType === 'diario' ? 'bg-blue-600 text-white' : 'text-gray-600'}`}
           >
             Diario
           </button>
           <button
             onClick={() => setViewType('semanal')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              viewType === 'semanal' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${viewType === 'semanal' ? 'bg-blue-600 text-white' : 'text-gray-600'}`}
           >
             Semanal
           </button>
           <button
             onClick={() => setViewType('mensual')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              viewType === 'mensual' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${viewType === 'mensual' ? 'bg-blue-600 text-white' : 'text-gray-600'}`}
           >
             Mensual
           </button>
@@ -386,33 +380,33 @@ function CalculadoraRapida({ moneda }: { moneda: string }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 no-print">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Calculadora Rápida</h2>
+    <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 no-print">
+      <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3">Calculadora</h2>
       
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-2 mb-3">
         <button
           onClick={() => setOperacion('suma')}
-          className={`px-4 py-2 rounded-lg ${operacion === 'suma' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}
+          className={`flex-1 px-3 py-2 rounded-lg text-sm ${operacion === 'suma' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}
         >
-          Sumar (+)
+          Sumar
         </button>
         <button
           onClick={() => setOperacion('resta')}
-          className={`px-4 py-2 rounded-lg ${operacion === 'resta' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}
+          className={`flex-1 px-3 py-2 rounded-lg text-sm ${operacion === 'resta' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}
         >
-          Restar (-)
+          Restar
         </button>
       </div>
 
-      <div className="space-y-2 mb-4">
+      <div className="space-y-2 mb-3">
         {valores.map((valor, index) => (
           <div key={index} className="flex items-center gap-2">
-            <span className="text-gray-500">{moneda}</span>
+            <span className="text-gray-500 text-sm">{moneda}</span>
             <input
               type="number"
               value={valor}
               onChange={(e) => actualizarValor(index, e.target.value)}
-              className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
               placeholder="0.00"
               step="0.01"
             />
@@ -420,24 +414,24 @@ function CalculadoraRapida({ moneda }: { moneda: string }) {
         ))}
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-3">
         <button
           onClick={agregarCampo}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm"
         >
           + Agregar
         </button>
         <button
           onClick={limpiar}
-          className="px-4 py-2 border text-gray-600 rounded-lg hover:bg-gray-50"
+          className="px-4 py-2 border text-gray-600 rounded-lg text-sm"
         >
           Limpiar
         </button>
       </div>
 
-      <div className="p-4 bg-gray-50 rounded-lg">
-        <p className="text-sm text-gray-500">Resultado:</p>
-        <p className={`text-3xl font-bold ${total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+      <div className="p-3 bg-gray-50 rounded-lg">
+        <p className="text-xs text-gray-500">Resultado:</p>
+        <p className={`text-2xl font-bold ${total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
           {formatMoneda(total, moneda)}
         </p>
       </div>

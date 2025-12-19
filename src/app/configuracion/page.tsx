@@ -53,79 +53,65 @@ export default function ConfiguracionPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-          <p className="text-gray-500">Personaliza los datos de tu lavandería</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Configuración</h1>
+          <p className="text-sm text-gray-500">Personaliza tu lavandería</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-4 md:p-6 space-y-5">
           {/* Datos del Negocio */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Datos del Negocio</h2>
-            <div className="space-y-4">
+            <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3">Datos del Negocio</h2>
+            <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre del Negocio
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                 <input
                   type="text"
                   value={config.nombreNegocio}
                   onChange={(e) => setConfig({ ...config, nombreNegocio: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                   placeholder="Mi Lavandería"
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  RUC (opcional)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">RUC</label>
                 <input
                   type="text"
                   value={config.ruc || ''}
                   onChange={(e) => setConfig({ ...config, ruc: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                   placeholder="12345678901"
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Dirección
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
                 <input
                   type="text"
                   value={config.direccion}
                   onChange={(e) => setConfig({ ...config, direccion: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Av. Principal 123, Lima, Perú"
+                  className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
+                  placeholder="Av. Principal 123"
                 />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Teléfono
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
                   <input
                     type="tel"
                     value={config.telefono}
                     onChange={(e) => setConfig({ ...config, telefono: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                     placeholder="999 999 999"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email (opcional)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input
                     type="email"
                     value={config.email || ''}
                     onChange={(e) => setConfig({ ...config, email: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                     placeholder="contacto@lavanderia.com"
                   />
                 </div>
@@ -188,21 +174,21 @@ export default function ConfiguracionPage() {
           </div>
 
           {/* Botones */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-4 border-t">
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 md:py-2 text-gray-600 hover:text-gray-800"
             >
               <FiRefreshCw className="mr-2" />
               Restablecer
             </button>
             <button
               type="submit"
-              className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <FiSave className="mr-2" />
-              Guardar Cambios
+              Guardar
             </button>
           </div>
 

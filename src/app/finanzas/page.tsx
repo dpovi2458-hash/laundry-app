@@ -200,68 +200,43 @@ export default function FinanzasPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Finanzas</h1>
-            <p className="text-gray-500">Control de ingresos y egresos</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Finanzas</h1>
+            <p className="text-sm text-gray-500">Control de ingresos y egresos</p>
           </div>
-          <div className="flex items-center gap-3">
-            <select
-              value={mesSeleccionado}
-              onChange={(e) => setMesSeleccionado(e.target.value)}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 capitalize"
-            >
-              {meses.map((mes) => (
-                <option key={mes.value} value={mes.value} className="capitalize">
-                  {mes.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={mesSeleccionado}
+            onChange={(e) => setMesSeleccionado(e.target.value)}
+            className="w-full sm:w-auto px-4 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 capitalize text-base"
+          >
+            {meses.map((mes) => (
+              <option key={mes.value} value={mes.value} className="capitalize">
+                {mes.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Resumen Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Ingresos</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatMoneda(resumen.ingresos, moneda)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                <FiTrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
+          <div className="bg-white rounded-xl shadow-sm p-3 md:p-6">
+            <p className="text-xs md:text-sm text-gray-500">Ingresos</p>
+            <p className="text-sm md:text-2xl font-bold text-green-600 truncate">
+              {formatMoneda(resumen.ingresos, moneda)}
+            </p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Egresos</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {formatMoneda(resumen.egresos, moneda)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
-                <FiTrendingDown className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm p-3 md:p-6">
+            <p className="text-xs md:text-sm text-gray-500">Egresos</p>
+            <p className="text-sm md:text-2xl font-bold text-red-600 truncate">
+              {formatMoneda(resumen.egresos, moneda)}
+            </p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Balance</p>
-                <p className={`text-2xl font-bold ${resumen.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatMoneda(resumen.balance, moneda)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <FiDollarSign className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm p-3 md:p-6">
+            <p className="text-xs md:text-sm text-gray-500">Balance</p>
+            <p className={`text-sm md:text-2xl font-bold truncate ${resumen.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatMoneda(resumen.balance, moneda)}
+            </p>
           </div>
         </div>
 
@@ -270,79 +245,48 @@ export default function FinanzasPage() {
           <div className="flex border-b">
             <button
               onClick={() => setTab('ingresos')}
-              className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${
-                tab === 'ingresos'
-                  ? 'text-green-600 border-b-2 border-green-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 px-3 md:px-6 py-3 md:py-4 text-center text-sm md:text-base font-medium transition-colors ${tab === 'ingresos' ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-500'}`}
             >
               Ingresos ({ingresos.length})
             </button>
             <button
               onClick={() => setTab('egresos')}
-              className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${
-                tab === 'egresos'
-                  ? 'text-red-600 border-b-2 border-red-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 px-3 md:px-6 py-3 md:py-4 text-center text-sm md:text-base font-medium transition-colors ${tab === 'egresos' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-500'}`}
             >
               Egresos ({egresos.length})
             </button>
           </div>
 
-          <div className="p-4">
+          <div className="p-3 md:p-4">
             {/* Add button */}
-            <div className="mb-4 flex justify-end">
+            <div className="mb-3">
               <button
                 onClick={() => handleOpenModal(tab === 'ingresos' ? 'ingreso' : 'egreso')}
-                className={`inline-flex items-center px-4 py-2 rounded-lg text-white transition-colors ${
-                  tab === 'ingresos' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                }`}
+                className={`w-full md:w-auto md:float-right inline-flex items-center justify-center px-4 py-3 md:py-2 rounded-lg text-white transition-colors ${tab === 'ingresos' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
               >
                 <FiPlus className="mr-2" />
                 Nuevo {tab === 'ingresos' ? 'Ingreso' : 'Egreso'}
               </button>
+              <div className="clear-both"></div>
             </div>
 
             {/* Ingresos List */}
             {tab === 'ingresos' && (
               <div className="space-y-2">
                 {ingresos.length === 0 ? (
-                  <p className="text-center py-8 text-gray-500">No hay ingresos en este periodo</p>
+                  <p className="text-center py-6 text-gray-500 text-sm">No hay ingresos</p>
                 ) : (
                   ingresos.map((ingreso) => (
-                    <div
-                      key={ingreso.$id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{ingreso.concepto}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span>{formatFecha(ingreso.fecha)}</span>
-                          <span>•</span>
-                          <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
-                            {getCategoriaLabel(ingreso.categoria)}
-                          </span>
-                        </div>
+                    <div key={ingreso.$id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{ingreso.concepto}</p>
+                        <p className="text-xs text-gray-500">{formatFecha(ingreso.fecha)}</p>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-bold text-green-600">
-                          +{formatMoneda(ingreso.monto, moneda)}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleOpenModal('ingreso', ingreso)}
-                            className="p-2 text-gray-400 hover:text-blue-600"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteIngreso(ingreso.$id!)}
-                            className="p-2 text-gray-400 hover:text-red-600"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="font-bold text-green-600 text-sm">+{formatMoneda(ingreso.monto, moneda)}</span>
+                        <button onClick={() => handleDeleteIngreso(ingreso.$id!)} className="p-2 text-gray-400 hover:text-red-600">
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))
@@ -354,41 +298,19 @@ export default function FinanzasPage() {
             {tab === 'egresos' && (
               <div className="space-y-2">
                 {egresos.length === 0 ? (
-                  <p className="text-center py-8 text-gray-500">No hay egresos en este periodo</p>
+                  <p className="text-center py-6 text-gray-500 text-sm">No hay egresos</p>
                 ) : (
                   egresos.map((egreso) => (
-                    <div
-                      key={egreso.$id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{egreso.concepto}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span>{formatFecha(egreso.fecha)}</span>
-                          <span>•</span>
-                          <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs">
-                            {getCategoriaLabel(egreso.categoria)}
-                          </span>
-                        </div>
+                    <div key={egreso.$id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{egreso.concepto}</p>
+                        <p className="text-xs text-gray-500">{formatFecha(egreso.fecha)}</p>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-bold text-red-600">
-                          -{formatMoneda(egreso.monto, moneda)}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleOpenModal('egreso', egreso)}
-                            className="p-2 text-gray-400 hover:text-blue-600"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteEgreso(egreso.$id!)}
-                            className="p-2 text-gray-400 hover:text-red-600"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="font-bold text-red-600 text-sm">-{formatMoneda(egreso.monto, moneda)}</span>
+                        <button onClick={() => handleDeleteEgreso(egreso.$id!)} className="p-2 text-gray-400 hover:text-red-600">
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))
