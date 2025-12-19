@@ -1,13 +1,12 @@
-// Store híbrido: Appwrite cloud + localStorage como fallback
-// Intenta usar Appwrite primero, si falla usa localStorage
+// Store híbrido: Supabase cloud + localStorage como fallback
 
 import { Servicio, Pedido, Ingreso, Egreso, Configuracion } from '@/types';
-import * as appwrite from './appwrite';
+import * as supabaseLib from './supabase';
 
 // ============== CONFIGURACIÓN ==============
-const USE_APPWRITE = typeof window !== 'undefined' && 
-  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID && 
-  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID.length > 0;
+const USE_SUPABASE = typeof window !== 'undefined' && 
+  process.env.NEXT_PUBLIC_SUPABASE_URL && 
+  process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0;
 
 const STORAGE_KEYS = {
   SERVICIOS: 'lavanderia_servicios',
@@ -62,15 +61,15 @@ function generateId(): string {
 
 // ============== SERVICIOS ==============
 export async function getServicios(): Promise<Servicio[]> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const servicios = await appwrite.getServicios();
+      const servicios = await supabaseLib.getServicios();
       if (servicios.length > 0) return servicios;
       // Si no hay servicios en Appwrite, crear los iniciales
       for (const servicio of serviciosIniciales) {
-        await appwrite.createServicio(servicio);
+        await supabaseLib.createServicio(servicio);
       }
-      return await appwrite.getServicios();
+      return await supabaseLib.getServicios();
     } catch (error) {
       console.log('Usando localStorage para servicios:', error);
     }
@@ -99,9 +98,9 @@ export async function getServicioById(id: string): Promise<Servicio | undefined>
 }
 
 export async function createServicio(servicio: Omit<Servicio, '$id'>): Promise<Servicio> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const created = await appwrite.createServicio(servicio);
+      const created = await supabaseLib.createServicio(servicio);
       if (created) return created;
     } catch (error) {
       console.log('Fallback a localStorage para crear servicio:', error);
@@ -116,11 +115,11 @@ export async function createServicio(servicio: Omit<Servicio, '$id'>): Promise<S
 }
 
 export async function updateServicio(id: string, data: Partial<Servicio>): Promise<Servicio | null> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const success = await appwrite.updateServicio(id, data);
+      const success = await supabaseLib.updateServicio(id, data);
       if (success) {
-        const servicios = await appwrite.getServicios();
+        const servicios = await supabaseLib.getServicios();
         return servicios.find(s => s.$id === id) || null;
       }
     } catch (error) {
@@ -137,9 +136,9 @@ export async function updateServicio(id: string, data: Partial<Servicio>): Promi
 }
 
 export async function deleteServicio(id: string): Promise<boolean> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const success = await appwrite.deleteServicio(id);
+      const success = await supabaseLib.deleteServicio(id);
       if (success) return true;
     } catch (error) {
       console.log('Fallback a localStorage para eliminar servicio:', error);
@@ -155,9 +154,9 @@ export async function deleteServicio(id: string): Promise<boolean> {
 
 // ============== PEDIDOS ==============
 export async function getPedidos(): Promise<Pedido[]> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      return await appwrite.getPedidos();
+      return await supabaseLib.getPedidos();
     } catch (error) {
       console.log('Usando localStorage para pedidos:', error);
     }
@@ -170,9 +169,9 @@ export function getPedidosSync(): Pedido[] {
 }
 
 export async function getPedidoById(id: string): Promise<Pedido | undefined> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const pedido = await appwrite.getPedidoById(id);
+      const pedido = await supabaseLib.getPedidoById(id);
       if (pedido) return pedido;
     } catch (error) {
       console.log('Fallback a localStorage para obtener pedido:', error);
@@ -189,15 +188,15 @@ export function getNextNumeroFactura(): string {
 }
 
 export async function createPedido(pedido: Omit<Pedido, '$id' | 'numeroFactura' | 'createdAt'>): Promise<Pedido> {
-  const numeroFactura = USE_APPWRITE ? await appwrite.generarNumeroFactura() : getNextNumeroFactura();
+  const numeroFactura = USE_SUPABASE ? await supabaseLib.generarNumeroFactura() : getNextNumeroFactura();
   
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
       const nuevoPedido = {
         ...pedido,
         numeroFactura,
       };
-      const created = await appwrite.createPedido(nuevoPedido);
+      const created = await supabaseLib.createPedido(nuevoPedido);
       if (created) return created;
     } catch (error) {
       console.log('Fallback a localStorage para crear pedido:', error);
@@ -218,11 +217,11 @@ export async function createPedido(pedido: Omit<Pedido, '$id' | 'numeroFactura' 
 }
 
 export async function updatePedido(id: string, data: Partial<Pedido>): Promise<Pedido | null> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const success = await appwrite.updatePedido(id, data);
+      const success = await supabaseLib.updatePedido(id, data);
       if (success) {
-        return await appwrite.getPedidoById(id);
+        return await supabaseLib.getPedidoById(id);
       }
     } catch (error) {
       console.log('Fallback a localStorage para actualizar pedido:', error);
@@ -239,9 +238,9 @@ export async function updatePedido(id: string, data: Partial<Pedido>): Promise<P
 }
 
 export async function deletePedido(id: string): Promise<boolean> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const success = await appwrite.deletePedido(id);
+      const success = await supabaseLib.deletePedido(id);
       if (success) return true;
     } catch (error) {
       console.log('Fallback a localStorage para eliminar pedido:', error);
@@ -267,9 +266,9 @@ export async function getPedidosByRango(fechaInicio: string, fechaFin: string): 
 
 // ============== INGRESOS ==============
 export async function getIngresos(): Promise<Ingreso[]> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      return await appwrite.getIngresos();
+      return await supabaseLib.getIngresos();
     } catch (error) {
       console.log('Usando localStorage para ingresos:', error);
     }
@@ -278,9 +277,9 @@ export async function getIngresos(): Promise<Ingreso[]> {
 }
 
 export async function createIngreso(ingreso: Omit<Ingreso, '$id' | 'createdAt'>): Promise<Ingreso> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const created = await appwrite.createIngreso(ingreso);
+      const created = await supabaseLib.createIngreso(ingreso);
       if (created) return created;
     } catch (error) {
       console.log('Fallback a localStorage para crear ingreso:', error);
@@ -295,9 +294,9 @@ export async function createIngreso(ingreso: Omit<Ingreso, '$id' | 'createdAt'>)
 }
 
 export async function deleteIngreso(id: string): Promise<boolean> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const success = await appwrite.deleteIngreso(id);
+      const success = await supabaseLib.deleteIngreso(id);
       if (success) return true;
     } catch (error) {
       console.log('Fallback a localStorage para eliminar ingreso:', error);
@@ -323,9 +322,9 @@ export async function getIngresosByRango(fechaInicio: string, fechaFin: string):
 
 // ============== EGRESOS ==============
 export async function getEgresos(): Promise<Egreso[]> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      return await appwrite.getEgresos();
+      return await supabaseLib.getEgresos();
     } catch (error) {
       console.log('Usando localStorage para egresos:', error);
     }
@@ -334,9 +333,9 @@ export async function getEgresos(): Promise<Egreso[]> {
 }
 
 export async function createEgreso(egreso: Omit<Egreso, '$id' | 'createdAt'>): Promise<Egreso> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const created = await appwrite.createEgreso(egreso);
+      const created = await supabaseLib.createEgreso(egreso);
       if (created) return created;
     } catch (error) {
       console.log('Fallback a localStorage para crear egreso:', error);
@@ -351,9 +350,9 @@ export async function createEgreso(egreso: Omit<Egreso, '$id' | 'createdAt'>): P
 }
 
 export async function deleteEgreso(id: string): Promise<boolean> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const success = await appwrite.deleteEgreso(id);
+      const success = await supabaseLib.deleteEgreso(id);
       if (success) return true;
     } catch (error) {
       console.log('Fallback a localStorage para eliminar egreso:', error);
@@ -379,9 +378,9 @@ export async function getEgresosByRango(fechaInicio: string, fechaFin: string): 
 
 // ============== CONFIGURACIÓN ==============
 export async function getConfiguracion(): Promise<Configuracion> {
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const config = await appwrite.getConfiguracion();
+      const config = await supabaseLib.getConfiguracion();
       if (config) return config;
     } catch (error) {
       console.log('Usando localStorage para configuración:', error);
@@ -409,11 +408,11 @@ export async function updateConfiguracion(data: Partial<Configuracion>): Promise
   const configActual = await getConfiguracion();
   const updated = { ...configActual, ...data };
   
-  if (USE_APPWRITE) {
+  if (USE_SUPABASE) {
     try {
-      const success = await appwrite.saveConfiguracion(updated);
+      const success = await supabaseLib.saveConfiguracion(updated);
       if (success) {
-        const config = await appwrite.getConfiguracion();
+        const config = await supabaseLib.getConfiguracion();
         if (config) return config;
       }
     } catch (error) {

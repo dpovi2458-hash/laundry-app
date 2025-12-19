@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { FiSave, FiRefreshCw } from 'react-icons/fi';
+import { FiSave, FiRefreshCw, FiWifi, FiWifiOff } from 'react-icons/fi';
 import { getConfiguracion, updateConfiguracion } from '@/lib/store';
+import { testConnection } from '@/lib/supabase';
 import { Configuracion } from '@/types';
 
 export default function ConfiguracionPage() {
@@ -18,6 +19,8 @@ export default function ConfiguracionPage() {
     mensajeFactura: '',
   });
   const [saved, setSaved] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'error'>('testing');
+  const [connectionError, setConnectionError] = useState<string>('');
 
   useEffect(() => {
     async function loadConfig() {
@@ -25,7 +28,20 @@ export default function ConfiguracionPage() {
       setConfig(configData);
     }
     loadConfig();
+    checkConnection();
   }, []);
+
+  async function checkConnection() {
+    setConnectionStatus('testing');
+    const result = await testConnection();
+    if (result.success) {
+      setConnectionStatus('connected');
+      setConnectionError('');
+    } else {
+      setConnectionStatus('error');
+      setConnectionError(result.error || 'Error desconocido');
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -199,16 +215,47 @@ export default function ConfiguracionPage() {
           )}
         </form>
 
-        {/* Información de Appwrite */}
-        <div className="bg-blue-50 rounded-xl p-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Conexión con Appwrite</h3>
-          <p className="text-sm text-blue-700 mb-4">
-            Para usar la base de datos en la nube, configura las variables de entorno en tu archivo .env.local
+        {/* Estado de Conexión Supabase */}
+        <div className={`rounded-xl p-4 ${connectionStatus === 'connected' ? 'bg-green-50' : connectionStatus === 'error' ? 'bg-red-50' : 'bg-gray-50'}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {connectionStatus === 'connected' ? (
+                <FiWifi className="w-5 h-5 text-green-600" />
+              ) : connectionStatus === 'error' ? (
+                <FiWifiOff className="w-5 h-5 text-red-600" />
+              ) : (
+                <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              )}
+              <div>
+                <p className={`font-semibold ${connectionStatus === 'connected' ? 'text-green-800' : connectionStatus === 'error' ? 'text-red-800' : 'text-gray-800'}`}>
+                  {connectionStatus === 'connected' ? 'Conectado a Supabase' : connectionStatus === 'error' ? 'Sin conexión a Supabase' : 'Probando conexión...'}
+                </p>
+                {connectionStatus === 'error' && (
+                  <p className="text-xs text-red-600 mt-1">{connectionError}</p>
+                )}
+                {connectionStatus === 'error' && (
+                  <p className="text-xs text-gray-600 mt-1">Usando almacenamiento local como respaldo</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={checkConnection}
+              className="px-3 py-1 text-sm bg-white rounded-lg border hover:bg-gray-50"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+
+        {/* Información de Supabase */}
+        <div className="bg-blue-50 rounded-xl p-4">
+          <h3 className="font-semibold text-blue-900 mb-2">Configuración de Supabase</h3>
+          <p className="text-xs text-blue-700 mb-3">
+            Para conectar con Supabase, crea las tablas y configura las variables de entorno.
           </p>
-          <div className="bg-white rounded-lg p-4 font-mono text-xs overflow-x-auto">
-            <p>NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1</p>
-            <p>NEXT_PUBLIC_APPWRITE_PROJECT_ID=tu_project_id</p>
-            <p>NEXT_PUBLIC_APPWRITE_DATABASE_ID=tu_database_id</p>
+          <div className="bg-white rounded-lg p-3 font-mono text-xs overflow-x-auto space-y-1">
+            <p><span className="text-gray-500">URL:</span> {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ Configurado' : '✗ No configurado'}</p>
+            <p><span className="text-gray-500">Key:</span> {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓ Configurado' : '✗ No configurado'}</p>
           </div>
         </div>
       </div>

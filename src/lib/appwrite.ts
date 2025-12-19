@@ -4,21 +4,46 @@ import { Servicio, Pedido, Ingreso, Egreso, Configuracion } from '@/types';
 // Configuración de Appwrite
 const client = new Client();
 
+const ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '';
+
+console.log('[Appwrite] Inicializando con:', { ENDPOINT, PROJECT_ID: PROJECT_ID ? PROJECT_ID.substring(0, 8) + '...' : 'NO CONFIGURADO' });
+
 client
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '');
+  .setEndpoint(ENDPOINT)
+  .setProject(PROJECT_ID);
 
 export const databases = new Databases(client);
 
 // IDs de la base de datos y colecciones
 export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'lavanderia_db';
 export const COLLECTIONS = {
-  SERVICIOS: 'servicios',
-  PEDIDOS: 'pedidos',
-  INGRESOS: 'ingresos',
-  EGRESOS: 'egresos',
-  CONFIGURACION: 'configuracion',
+  SERVICIOS: process.env.NEXT_PUBLIC_COLLECTION_SERVICIOS || 'servicios',
+  PEDIDOS: process.env.NEXT_PUBLIC_COLLECTION_PEDIDOS || 'pedidos',
+  INGRESOS: process.env.NEXT_PUBLIC_COLLECTION_INGRESOS || 'ingresos',
+  EGRESOS: process.env.NEXT_PUBLIC_COLLECTION_EGRESOS || 'egresos',
+  CONFIGURACION: process.env.NEXT_PUBLIC_COLLECTION_CONFIG || 'configuracion',
 };
+
+console.log('[Appwrite] Database:', DATABASE_ID, 'Collections:', COLLECTIONS);
+
+// Test de conexión
+export async function testConnection(): Promise<{ success: boolean; error?: string; details?: unknown }> {
+  try {
+    console.log('[Appwrite] Probando conexión...');
+    const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.SERVICIOS, [Query.limit(1)]);
+    console.log('[Appwrite] Conexión exitosa, documentos:', response.total);
+    return { success: true, details: { total: response.total } };
+  } catch (error: unknown) {
+    const err = error as { message?: string; code?: number; type?: string };
+    console.error('[Appwrite] Error de conexión:', err);
+    return { 
+      success: false, 
+      error: err.message || 'Error desconocido',
+      details: { code: err.code, type: err.type }
+    };
+  }
+}
 
 // ==================== SERVICIOS ====================
 export async function getServicios(): Promise<Servicio[]> {
