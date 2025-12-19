@@ -1,0 +1,468 @@
+// Store híbrido: Appwrite cloud + localStorage como fallback
+// Intenta usar Appwrite primero, si falla usa localStorage
+
+import { Servicio, Pedido, Ingreso, Egreso, Configuracion } from '@/types';
+import * as appwrite from './appwrite';
+
+// ============== CONFIGURACIÓN ==============
+const USE_APPWRITE = typeof window !== 'undefined' && 
+  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID && 
+  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID.length > 0;
+
+const STORAGE_KEYS = {
+  SERVICIOS: 'lavanderia_servicios',
+  PEDIDOS: 'lavanderia_pedidos',
+  INGRESOS: 'lavanderia_ingresos',
+  EGRESOS: 'lavanderia_egresos',
+  CONFIG: 'lavanderia_config',
+  CONTADOR_FACTURA: 'lavanderia_contador_factura',
+};
+
+// Datos iniciales de servicios
+const serviciosIniciales: Servicio[] = [
+  { $id: '1', nombre: 'Lavado por Kilo', descripcion: 'Lavado completo de ropa por kilogramo', precio: 8.00, unidad: 'kg', activo: true },
+  { $id: '2', nombre: 'Lavado de Edredón', descripcion: 'Lavado de edredón o cobertor', precio: 25.00, unidad: 'unidad', activo: true },
+  { $id: '3', nombre: 'Lavado de Frazada', descripcion: 'Lavado de frazada', precio: 18.00, unidad: 'unidad', activo: true },
+  { $id: '4', nombre: 'Planchado', descripcion: 'Servicio de planchado por prenda', precio: 3.00, unidad: 'prenda', activo: true },
+  { $id: '5', nombre: 'Lavado en Seco', descripcion: 'Lavado en seco para prendas delicadas', precio: 15.00, unidad: 'prenda', activo: true },
+  { $id: '6', nombre: 'Lavado de Zapatillas', descripcion: 'Limpieza de zapatillas', precio: 12.00, unidad: 'unidad', activo: true },
+];
+
+const configInicial: Configuracion = {
+  $id: '1',
+  nombreNegocio: 'Lavandería Express',
+  ruc: '',
+  direccion: 'Mz O Lt 23, Chillón - Pte. Piedra (Frt. Merc. Modelo)',
+  telefono: '999 999 999',
+  email: '',
+  moneda: 'S/',
+  mensajeFactura: '¡Gracias por su preferencia!',
+};
+
+// ============== HELPERS LOCALSTORAGE ==============
+function getFromStorage<T>(key: string, defaultValue: T): T {
+  if (typeof window === 'undefined') return defaultValue;
+  const stored = localStorage.getItem(key);
+  if (!stored) return defaultValue;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return defaultValue;
+  }
+}
+
+function saveToStorage<T>(key: string, value: T): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// ============== SERVICIOS ==============
+export async function getServicios(): Promise<Servicio[]> {
+  if (USE_APPWRITE) {
+    try {
+      const servicios = await appwrite.getServicios();
+      if (servicios.length > 0) return servicios;
+      // Si no hay servicios en Appwrite, crear los iniciales
+      for (const servicio of serviciosIniciales) {
+        await appwrite.createServicio(servicio);
+      }
+      return await appwrite.getServicios();
+    } catch (error) {
+      console.log('Usando localStorage para servicios:', error);
+    }
+  }
+  // Fallback a localStorage
+  const servicios = getFromStorage<Servicio[]>(STORAGE_KEYS.SERVICIOS, []);
+  if (servicios.length === 0) {
+    saveToStorage(STORAGE_KEYS.SERVICIOS, serviciosIniciales);
+    return serviciosIniciales;
+  }
+  return servicios;
+}
+
+export function getServiciosSync(): Servicio[] {
+  const servicios = getFromStorage<Servicio[]>(STORAGE_KEYS.SERVICIOS, []);
+  if (servicios.length === 0) {
+    saveToStorage(STORAGE_KEYS.SERVICIOS, serviciosIniciales);
+    return serviciosIniciales;
+  }
+  return servicios;
+}
+
+export async function getServicioById(id: string): Promise<Servicio | undefined> {
+  const servicios = await getServicios();
+  return servicios.find(s => s.$id === id);
+}
+
+export async function createServicio(servicio: Omit<Servicio, '$id'>): Promise<Servicio> {
+  if (USE_APPWRITE) {
+    try {
+      const created = await appwrite.createServicio(servicio);
+      if (created) return created;
+    } catch (error) {
+      console.log('Fallback a localStorage para crear servicio:', error);
+    }
+  }
+  // Fallback a localStorage
+  const servicios = getFromStorage<Servicio[]>(STORAGE_KEYS.SERVICIOS, serviciosIniciales);
+  const nuevo: Servicio = { ...servicio, $id: generateId(), createdAt: new Date().toISOString() };
+  servicios.push(nuevo);
+  saveToStorage(STORAGE_KEYS.SERVICIOS, servicios);
+  return nuevo;
+}
+
+export async function updateServicio(id: string, data: Partial<Servicio>): Promise<Servicio | null> {
+  if (USE_APPWRITE) {
+    try {
+      const success = await appwrite.updateServicio(id, data);
+      if (success) {
+        const servicios = await appwrite.getServicios();
+        return servicios.find(s => s.$id === id) || null;
+      }
+    } catch (error) {
+      console.log('Fallback a localStorage para actualizar servicio:', error);
+    }
+  }
+  // Fallback a localStorage
+  const servicios = getFromStorage<Servicio[]>(STORAGE_KEYS.SERVICIOS, serviciosIniciales);
+  const index = servicios.findIndex(s => s.$id === id);
+  if (index === -1) return null;
+  servicios[index] = { ...servicios[index], ...data };
+  saveToStorage(STORAGE_KEYS.SERVICIOS, servicios);
+  return servicios[index];
+}
+
+export async function deleteServicio(id: string): Promise<boolean> {
+  if (USE_APPWRITE) {
+    try {
+      const success = await appwrite.deleteServicio(id);
+      if (success) return true;
+    } catch (error) {
+      console.log('Fallback a localStorage para eliminar servicio:', error);
+    }
+  }
+  // Fallback a localStorage
+  const servicios = getFromStorage<Servicio[]>(STORAGE_KEYS.SERVICIOS, serviciosIniciales);
+  const filtered = servicios.filter(s => s.$id !== id);
+  if (filtered.length === servicios.length) return false;
+  saveToStorage(STORAGE_KEYS.SERVICIOS, filtered);
+  return true;
+}
+
+// ============== PEDIDOS ==============
+export async function getPedidos(): Promise<Pedido[]> {
+  if (USE_APPWRITE) {
+    try {
+      return await appwrite.getPedidos();
+    } catch (error) {
+      console.log('Usando localStorage para pedidos:', error);
+    }
+  }
+  return getFromStorage<Pedido[]>(STORAGE_KEYS.PEDIDOS, []);
+}
+
+export function getPedidosSync(): Pedido[] {
+  return getFromStorage<Pedido[]>(STORAGE_KEYS.PEDIDOS, []);
+}
+
+export async function getPedidoById(id: string): Promise<Pedido | undefined> {
+  if (USE_APPWRITE) {
+    try {
+      const pedido = await appwrite.getPedidoById(id);
+      if (pedido) return pedido;
+    } catch (error) {
+      console.log('Fallback a localStorage para obtener pedido:', error);
+    }
+  }
+  return getFromStorage<Pedido[]>(STORAGE_KEYS.PEDIDOS, []).find(p => p.$id === id);
+}
+
+export function getNextNumeroFactura(): string {
+  const contador = getFromStorage<number>(STORAGE_KEYS.CONTADOR_FACTURA, 0) + 1;
+  saveToStorage(STORAGE_KEYS.CONTADOR_FACTURA, contador);
+  const fecha = new Date();
+  return `F${fecha.getFullYear()}${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(contador).padStart(5, '0')}`;
+}
+
+export async function createPedido(pedido: Omit<Pedido, '$id' | 'numeroFactura' | 'createdAt'>): Promise<Pedido> {
+  const numeroFactura = USE_APPWRITE ? await appwrite.generarNumeroFactura() : getNextNumeroFactura();
+  
+  if (USE_APPWRITE) {
+    try {
+      const nuevoPedido = {
+        ...pedido,
+        numeroFactura,
+      };
+      const created = await appwrite.createPedido(nuevoPedido);
+      if (created) return created;
+    } catch (error) {
+      console.log('Fallback a localStorage para crear pedido:', error);
+    }
+  }
+  
+  // Fallback a localStorage
+  const pedidos = getFromStorage<Pedido[]>(STORAGE_KEYS.PEDIDOS, []);
+  const nuevo: Pedido = {
+    ...pedido,
+    $id: generateId(),
+    numeroFactura: getNextNumeroFactura(),
+    createdAt: new Date().toISOString(),
+  };
+  pedidos.push(nuevo);
+  saveToStorage(STORAGE_KEYS.PEDIDOS, pedidos);
+  return nuevo;
+}
+
+export async function updatePedido(id: string, data: Partial<Pedido>): Promise<Pedido | null> {
+  if (USE_APPWRITE) {
+    try {
+      const success = await appwrite.updatePedido(id, data);
+      if (success) {
+        return await appwrite.getPedidoById(id);
+      }
+    } catch (error) {
+      console.log('Fallback a localStorage para actualizar pedido:', error);
+    }
+  }
+  
+  // Fallback a localStorage
+  const pedidos = getFromStorage<Pedido[]>(STORAGE_KEYS.PEDIDOS, []);
+  const index = pedidos.findIndex(p => p.$id === id);
+  if (index === -1) return null;
+  pedidos[index] = { ...pedidos[index], ...data };
+  saveToStorage(STORAGE_KEYS.PEDIDOS, pedidos);
+  return pedidos[index];
+}
+
+export async function deletePedido(id: string): Promise<boolean> {
+  if (USE_APPWRITE) {
+    try {
+      const success = await appwrite.deletePedido(id);
+      if (success) return true;
+    } catch (error) {
+      console.log('Fallback a localStorage para eliminar pedido:', error);
+    }
+  }
+  
+  const pedidos = getFromStorage<Pedido[]>(STORAGE_KEYS.PEDIDOS, []);
+  const filtered = pedidos.filter(p => p.$id !== id);
+  if (filtered.length === pedidos.length) return false;
+  saveToStorage(STORAGE_KEYS.PEDIDOS, filtered);
+  return true;
+}
+
+export async function getPedidosByFecha(fecha: string): Promise<Pedido[]> {
+  const pedidos = await getPedidos();
+  return pedidos.filter(p => p.fechaRecepcion.startsWith(fecha));
+}
+
+export async function getPedidosByRango(fechaInicio: string, fechaFin: string): Promise<Pedido[]> {
+  const pedidos = await getPedidos();
+  return pedidos.filter(p => p.fechaRecepcion >= fechaInicio && p.fechaRecepcion <= fechaFin);
+}
+
+// ============== INGRESOS ==============
+export async function getIngresos(): Promise<Ingreso[]> {
+  if (USE_APPWRITE) {
+    try {
+      return await appwrite.getIngresos();
+    } catch (error) {
+      console.log('Usando localStorage para ingresos:', error);
+    }
+  }
+  return getFromStorage<Ingreso[]>(STORAGE_KEYS.INGRESOS, []);
+}
+
+export async function createIngreso(ingreso: Omit<Ingreso, '$id' | 'createdAt'>): Promise<Ingreso> {
+  if (USE_APPWRITE) {
+    try {
+      const created = await appwrite.createIngreso(ingreso);
+      if (created) return created;
+    } catch (error) {
+      console.log('Fallback a localStorage para crear ingreso:', error);
+    }
+  }
+  
+  const ingresos = getFromStorage<Ingreso[]>(STORAGE_KEYS.INGRESOS, []);
+  const nuevo: Ingreso = { ...ingreso, $id: generateId(), createdAt: new Date().toISOString() };
+  ingresos.push(nuevo);
+  saveToStorage(STORAGE_KEYS.INGRESOS, ingresos);
+  return nuevo;
+}
+
+export async function deleteIngreso(id: string): Promise<boolean> {
+  if (USE_APPWRITE) {
+    try {
+      const success = await appwrite.deleteIngreso(id);
+      if (success) return true;
+    } catch (error) {
+      console.log('Fallback a localStorage para eliminar ingreso:', error);
+    }
+  }
+  
+  const ingresos = getFromStorage<Ingreso[]>(STORAGE_KEYS.INGRESOS, []);
+  const filtered = ingresos.filter(i => i.$id !== id);
+  if (filtered.length === ingresos.length) return false;
+  saveToStorage(STORAGE_KEYS.INGRESOS, filtered);
+  return true;
+}
+
+export async function getIngresosByFecha(fecha: string): Promise<Ingreso[]> {
+  const ingresos = await getIngresos();
+  return ingresos.filter(i => i.fecha.startsWith(fecha));
+}
+
+export async function getIngresosByRango(fechaInicio: string, fechaFin: string): Promise<Ingreso[]> {
+  const ingresos = await getIngresos();
+  return ingresos.filter(i => i.fecha >= fechaInicio && i.fecha <= fechaFin);
+}
+
+// ============== EGRESOS ==============
+export async function getEgresos(): Promise<Egreso[]> {
+  if (USE_APPWRITE) {
+    try {
+      return await appwrite.getEgresos();
+    } catch (error) {
+      console.log('Usando localStorage para egresos:', error);
+    }
+  }
+  return getFromStorage<Egreso[]>(STORAGE_KEYS.EGRESOS, []);
+}
+
+export async function createEgreso(egreso: Omit<Egreso, '$id' | 'createdAt'>): Promise<Egreso> {
+  if (USE_APPWRITE) {
+    try {
+      const created = await appwrite.createEgreso(egreso);
+      if (created) return created;
+    } catch (error) {
+      console.log('Fallback a localStorage para crear egreso:', error);
+    }
+  }
+  
+  const egresos = getFromStorage<Egreso[]>(STORAGE_KEYS.EGRESOS, []);
+  const nuevo: Egreso = { ...egreso, $id: generateId(), createdAt: new Date().toISOString() };
+  egresos.push(nuevo);
+  saveToStorage(STORAGE_KEYS.EGRESOS, egresos);
+  return nuevo;
+}
+
+export async function deleteEgreso(id: string): Promise<boolean> {
+  if (USE_APPWRITE) {
+    try {
+      const success = await appwrite.deleteEgreso(id);
+      if (success) return true;
+    } catch (error) {
+      console.log('Fallback a localStorage para eliminar egreso:', error);
+    }
+  }
+  
+  const egresos = getFromStorage<Egreso[]>(STORAGE_KEYS.EGRESOS, []);
+  const filtered = egresos.filter(e => e.$id !== id);
+  if (filtered.length === egresos.length) return false;
+  saveToStorage(STORAGE_KEYS.EGRESOS, filtered);
+  return true;
+}
+
+export async function getEgresosByFecha(fecha: string): Promise<Egreso[]> {
+  const egresos = await getEgresos();
+  return egresos.filter(e => e.fecha.startsWith(fecha));
+}
+
+export async function getEgresosByRango(fechaInicio: string, fechaFin: string): Promise<Egreso[]> {
+  const egresos = await getEgresos();
+  return egresos.filter(e => e.fecha >= fechaInicio && e.fecha <= fechaFin);
+}
+
+// ============== CONFIGURACIÓN ==============
+export async function getConfiguracion(): Promise<Configuracion> {
+  if (USE_APPWRITE) {
+    try {
+      const config = await appwrite.getConfiguracion();
+      if (config) return config;
+    } catch (error) {
+      console.log('Usando localStorage para configuración:', error);
+    }
+  }
+  
+  const config = getFromStorage<Configuracion | null>(STORAGE_KEYS.CONFIG, null);
+  if (!config) {
+    saveToStorage(STORAGE_KEYS.CONFIG, configInicial);
+    return configInicial;
+  }
+  return config;
+}
+
+export function getConfiguracionSync(): Configuracion {
+  const config = getFromStorage<Configuracion | null>(STORAGE_KEYS.CONFIG, null);
+  if (!config) {
+    saveToStorage(STORAGE_KEYS.CONFIG, configInicial);
+    return configInicial;
+  }
+  return config;
+}
+
+export async function updateConfiguracion(data: Partial<Configuracion>): Promise<Configuracion> {
+  const configActual = await getConfiguracion();
+  const updated = { ...configActual, ...data };
+  
+  if (USE_APPWRITE) {
+    try {
+      const success = await appwrite.saveConfiguracion(updated);
+      if (success) {
+        const config = await appwrite.getConfiguracion();
+        if (config) return config;
+      }
+    } catch (error) {
+      console.log('Fallback a localStorage para actualizar configuración:', error);
+    }
+  }
+  
+  saveToStorage(STORAGE_KEYS.CONFIG, updated);
+  return updated;
+}
+
+// ============== RESUMEN FINANCIERO ==============
+export async function getResumenDiario(fecha: string) {
+  const [ingresos, egresos, pedidos] = await Promise.all([
+    getIngresosByFecha(fecha),
+    getEgresosByFecha(fecha),
+    getPedidosByFecha(fecha),
+  ]);
+  
+  const totalIngresos = ingresos.reduce((sum, i) => sum + i.monto, 0);
+  const totalEgresos = egresos.reduce((sum, e) => sum + e.monto, 0);
+  
+  return {
+    fecha,
+    ingresos: totalIngresos,
+    egresos: totalEgresos,
+    balance: totalIngresos - totalEgresos,
+    cantidadPedidos: pedidos.length,
+    pedidosPendientes: pedidos.filter(p => p.estado !== 'entregado').length,
+  };
+}
+
+export async function getResumenPorRango(fechaInicio: string, fechaFin: string) {
+  const [ingresos, egresos, pedidos] = await Promise.all([
+    getIngresosByRango(fechaInicio, fechaFin),
+    getEgresosByRango(fechaInicio, fechaFin),
+    getPedidosByRango(fechaInicio, fechaFin),
+  ]);
+  
+  const totalIngresos = ingresos.reduce((sum, i) => sum + i.monto, 0);
+  const totalEgresos = egresos.reduce((sum, e) => sum + e.monto, 0);
+  
+  return {
+    fechaInicio,
+    fechaFin,
+    ingresos: totalIngresos,
+    egresos: totalEgresos,
+    balance: totalIngresos - totalEgresos,
+    cantidadPedidos: pedidos.length,
+    pedidosPendientes: pedidos.filter(p => p.estado !== 'entregado').length,
+  };
+}
