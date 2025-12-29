@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FiPrinter, FiX, FiCheck } from 'react-icons/fi';
-import { getPedidos, getConfiguracion } from '@/lib/store';
+import { FiPrinter, FiCheck, FiSave, FiCheckCircle } from 'react-icons/fi';
+import { getPedidos, getConfiguracion, createFacturaImpresa } from '@/lib/store';
 import { formatMoneda, formatFecha } from '@/lib/utils';
 import { Pedido, Configuracion } from '@/types';
 import Link from 'next/link';
@@ -12,6 +12,8 @@ export default function ImprimirMultiplePage() {
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
   const [config, setConfig] = useState<Configuracion | null>(null);
   const [moneda, setMoneda] = useState('S/');
+  const [guardando, setGuardando] = useState(false);
+  const [guardadoExitoso, setGuardadoExitoso] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -37,8 +39,29 @@ export default function ImprimirMultiplePage() {
     }
   }
 
-  function handlePrint() {
-    window.print();
+  async function guardarYPrintear() {
+    setGuardando(true);
+    
+    // Guardar registro de impresión en la base de datos
+    const pedidosSeleccionados = pedidos.filter(p => seleccionados.includes(p.$id!));
+    
+    for (const pedido of pedidosSeleccionados) {
+      await createFacturaImpresa({
+        pedidoId: pedido.$id!,
+        numeroFactura: pedido.numeroFactura,
+        cliente: pedido.cliente,
+        total: pedido.total,
+      });
+    }
+    
+    setGuardando(false);
+    setGuardadoExitoso(true);
+    
+    // Mostrar mensaje de éxito brevemente y luego imprimir
+    setTimeout(() => {
+      window.print();
+      setGuardadoExitoso(false);
+    }, 500);
   }
 
   const pedidosSeleccionados = pedidos.filter(p => seleccionados.includes(p.$id!));
@@ -46,40 +69,94 @@ export default function ImprimirMultiplePage() {
   return (
     <>
       {/* Panel de selección - NO se imprime */}
-      <div className="no-print min-h-screen bg-gray-50 p-6">
+      <div className="no-print min-h-screen bg-gray-50 p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Imprimir Múltiples Facturas</h1>
-              <p className="text-gray-500">Selecciona hasta 4 pedidos para imprimir en una hoja A4</p>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Imprimir Facturas</h1>
+              <p className="text-sm text-gray-500">Selecciona hasta 4 pedidos para imprimir en A4</p>
             </div>
             <Link
               href="/facturas"
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="text-center px-4 py-2 text-gray-600 hover:text-gray-800 border rounded-lg hover:bg-gray-100 transition-colors"
             >
               ← Volver
             </Link>
           </div>
 
-          {/* Contador */}
-          <div className="bg-blue-50 rounded-lg p-4 mb-6 flex items-center justify-between">
-            <span className="text-blue-800">
-              Seleccionados: <strong>{seleccionados.length}/4</strong>
-            </span>
+          {/* Contador y botón de impresión */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 border border-blue-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-600 font-bold">{seleccionados.length}/4</span>
+              </div>
+              <span className="text-blue-800 font-medium">
+                Facturas seleccionadas
+              </span>
+            </div>
             {seleccionados.length > 0 && (
               <button
-                onClick={handlePrint}
-                className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                onClick={guardarYPrintear}
+                disabled={guardando}
+                className={`w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-xl text-white font-medium transition-all active:scale-[0.98] ${
+                  guardadoExitoso 
+                    ? 'bg-green-500' 
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+                } ${guardando ? 'opacity-70 cursor-wait' : ''}`}
               >
-                <FiPrinter className="mr-2" />
-                Imprimir {seleccionados.length} Factura{seleccionados.length > 1 ? 's' : ''}
+                {guardadoExitoso ? (
+                  <>
+                    <FiCheckCircle className="mr-2 w-5 h-5" />
+                    ¡Guardado!
+                  </>
+                ) : guardando ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <FiPrinter className="mr-2 w-5 h-5" />
+                    Guardar e Imprimir ({seleccionados.length})
+                  </>
+                )}
               </button>
             )}
           </div>
 
           {/* Lista de pedidos */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {/* Vista móvil - Cards */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {pedidos.map((pedido) => {
+                const isSelected = seleccionados.includes(pedido.$id!);
+                const isDisabled = !isSelected && seleccionados.length >= 4;
+                
+                return (
+                  <div 
+                    key={pedido.$id} 
+                    onClick={() => !isDisabled && toggleSeleccion(pedido.$id!)}
+                    className={`p-4 flex items-center gap-4 transition-colors active:bg-gray-50 ${
+                      isSelected ? 'bg-blue-50' : isDisabled ? 'bg-gray-100 opacity-50' : ''
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                    }`}>
+                      {isSelected && <FiCheck className="w-4 h-4 text-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{pedido.cliente}</p>
+                      <p className="text-xs text-gray-500">{pedido.numeroFactura} • {formatFecha(pedido.fechaRecepcion)}</p>
+                    </div>
+                    <span className="font-bold text-gray-900">{formatMoneda(pedido.total, moneda)}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Vista desktop - Tabla */}
+            <table className="w-full hidden md:table">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sel.</th>
@@ -103,7 +180,7 @@ export default function ImprimirMultiplePage() {
                       }`}
                     >
                       <td className="px-4 py-3">
-                        <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                           isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
                         }`}>
                           {isSelected && <FiCheck className="w-4 h-4 text-white" />}

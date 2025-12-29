@@ -1,6 +1,6 @@
 // Store híbrido: Supabase cloud + localStorage como fallback
 
-import { Servicio, Pedido, Ingreso, Egreso, Configuracion } from '@/types';
+import { Servicio, Pedido, Ingreso, Egreso, Configuracion, FacturaImpresa } from '@/types';
 import * as supabaseLib from './supabase';
 
 // ============== CONFIGURACIÓN ==============
@@ -15,6 +15,7 @@ const STORAGE_KEYS = {
   EGRESOS: 'lavanderia_egresos',
   CONFIG: 'lavanderia_config',
   CONTADOR_FACTURA: 'lavanderia_contador_factura',
+  FACTURAS_IMPRESAS: 'lavanderia_facturas_impresas',
 };
 
 // Datos iniciales de servicios
@@ -464,4 +465,69 @@ export async function getResumenPorRango(fechaInicio: string, fechaFin: string) 
     cantidadPedidos: pedidos.length,
     pedidosPendientes: pedidos.filter(p => p.estado !== 'entregado').length,
   };
+}
+
+// ============== FACTURAS IMPRESAS ==============
+export async function getFacturasImpresas(): Promise<FacturaImpresa[]> {
+  if (USE_SUPABASE) {
+    try {
+      return await supabaseLib.getFacturasImpresas();
+    } catch (error) {
+      console.log('Usando localStorage para facturas impresas:', error);
+    }
+  }
+  return getFromStorage<FacturaImpresa[]>(STORAGE_KEYS.FACTURAS_IMPRESAS, []);
+}
+
+export async function createFacturaImpresa(factura: Omit<FacturaImpresa, '$id' | 'createdAt'>): Promise<FacturaImpresa> {
+  if (USE_SUPABASE) {
+    try {
+      const created = await supabaseLib.createFacturaImpresa(factura);
+      if (created) return created;
+    } catch (error) {
+      console.log('Fallback a localStorage para crear factura impresa:', error);
+    }
+  }
+  
+  const facturas = getFromStorage<FacturaImpresa[]>(STORAGE_KEYS.FACTURAS_IMPRESAS, []);
+  const nueva: FacturaImpresa = { 
+    ...factura, 
+    $id: generateId(), 
+    impresoEn: new Date().toISOString(),
+    createdAt: new Date().toISOString() 
+  };
+  facturas.push(nueva);
+  saveToStorage(STORAGE_KEYS.FACTURAS_IMPRESAS, facturas);
+  return nueva;
+}
+
+// ============== DATOS PARA GRÁFICAS ==============
+export async function getDatosGraficaMensual(year: number, month: number) {
+  const dias = [];
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    dias.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+  }
+  
+  const [todosIngresos, todosEgresos] = await Promise.all([
+    getIngresos(),
+    getEgresos(),
+  ]);
+  
+  let balanceAcumulado = 0;
+  
+  return dias.map(fecha => {
+    const ingresosDelDia = todosIngresos.filter(i => i.fecha === fecha).reduce((sum, i) => sum + i.monto, 0);
+    const egresosDelDia = todosEgresos.filter(e => e.fecha === fecha).reduce((sum, e) => sum + e.monto, 0);
+    balanceAcumulado += ingresosDelDia - egresosDelDia;
+    
+    return {
+      fecha,
+      ingresos: ingresosDelDia,
+      egresos: egresosDelDia,
+      balance: ingresosDelDia - egresosDelDia,
+      balanceAcumulado,
+    };
+  });
 }

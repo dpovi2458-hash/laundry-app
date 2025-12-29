@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Servicio, Pedido, Ingreso, Egreso, Configuracion } from '@/types';
+import { Servicio, Pedido, Ingreso, Egreso, Configuracion, FacturaImpresa } from '@/types';
 
 // Configuración de Supabase para producción
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -565,6 +565,67 @@ export async function generarNumeroFactura(): Promise<string> {
   } catch (error) {
     const timestamp = Date.now().toString().slice(-6);
     return `FAC-${timestamp}`;
+  }
+}
+
+// ==================== FACTURAS IMPRESAS ====================
+export async function getFacturasImpresas(): Promise<FacturaImpresa[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from('facturas_impresas')
+      .select('*')
+      .order('impreso_en', { ascending: false })
+      .limit(100);
+    
+    if (error) throw error;
+    
+    return (data || []).map(doc => ({
+      $id: doc.id,
+      pedidoId: doc.pedido_id,
+      numeroFactura: doc.numero_factura,
+      cliente: doc.cliente,
+      total: doc.total,
+      contenidoHtml: doc.contenido_html,
+      impresoEn: doc.impreso_en,
+      createdAt: doc.created_at,
+    }));
+  } catch (error) {
+    console.error('Error al obtener facturas impresas:', error);
+    return [];
+  }
+}
+
+export async function createFacturaImpresa(factura: Omit<FacturaImpresa, '$id'>): Promise<FacturaImpresa | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('facturas_impresas')
+      .insert({
+        pedido_id: factura.pedidoId,
+        numero_factura: factura.numeroFactura,
+        cliente: factura.cliente,
+        total: factura.total,
+        contenido_html: factura.contenidoHtml || '',
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      $id: data.id,
+      pedidoId: data.pedido_id,
+      numeroFactura: data.numero_factura,
+      cliente: data.cliente,
+      total: data.total,
+      contenidoHtml: data.contenido_html,
+      impresoEn: data.impreso_en,
+      createdAt: data.created_at,
+    };
+  } catch (error) {
+    console.error('Error al crear factura impresa:', error);
+    return null;
   }
 }
 

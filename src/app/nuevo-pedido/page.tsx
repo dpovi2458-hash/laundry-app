@@ -19,6 +19,7 @@ export default function NuevoPedidoPage() {
   const [descuento, setDescuento] = useState(0);
   const [notas, setNotas] = useState('');
   const [fechaEntrega, setFechaEntrega] = useState('');
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -85,30 +86,42 @@ export default function NuevoPedidoPage() {
       return;
     }
 
-    const pedido = await createPedido({
-      cliente: cliente.trim(),
-      telefono: telefono.trim(),
-      servicios: carrito,
-      subtotal,
-      descuento,
-      total,
-      estado: 'pendiente',
-      metodoPago,
-      notas: notas.trim(),
-      fechaRecepcion: getHoy(),
-      fechaEntrega: fechaEntrega || undefined,
-    });
+    setGuardando(true);
+    
+    try {
+      const pedido = await createPedido({
+        cliente: cliente.trim(),
+        telefono: telefono.trim(),
+        servicios: carrito,
+        subtotal,
+        descuento,
+        total,
+        estado: 'pendiente',
+        metodoPago,
+        notas: notas.trim(),
+        fechaRecepcion: getHoy(),
+        fechaEntrega: fechaEntrega || undefined,
+      });
 
-    // Registrar ingreso
-    await createIngreso({
-      concepto: `Pedido ${pedido.numeroFactura} - ${cliente}`,
-      monto: total,
-      categoria: 'pedido',
-      pedidoId: pedido.$id,
-      fecha: getHoy(),
-    });
+      if (!pedido || !pedido.$id) {
+        throw new Error('No se pudo crear el pedido');
+      }
 
-    router.push(`/pedidos/${pedido.$id}?print=true`);
+      // Registrar ingreso
+      await createIngreso({
+        concepto: `Pedido ${pedido.numeroFactura} - ${cliente}`,
+        monto: total,
+        categoria: 'pedido',
+        pedidoId: pedido.$id,
+        fecha: getHoy(),
+      });
+
+      router.push(`/pedidos/${pedido.$id}?print=true`);
+    } catch (error) {
+      console.error('Error al crear pedido:', error);
+      alert('Error al crear el pedido. Por favor intenta de nuevo.');
+      setGuardando(false);
+    }
   }
 
   function getUnidadLabel(servicio: Servicio): string {
@@ -140,10 +153,11 @@ export default function NuevoPedidoPage() {
                   </div>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    disabled={guardando}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiPrinter className="w-4 h-4" />
-                    Crear
+                    {guardando ? 'Guardando...' : 'Crear'}
                   </button>
                 </div>
               </div>
@@ -261,9 +275,18 @@ export default function NuevoPedidoPage() {
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Resumen</h2>
               
               {carrito.length === 0 ? (
-                <p className="text-gray-500 text-center py-6 text-sm">
-                  Toca un servicio para agregar
-                </p>
+                <div className="text-center py-6">
+                  <p className="text-gray-500 text-sm mb-4">
+                    Toca un servicio para agregar
+                  </p>
+                  <button
+                    type="submit"
+                    className="w-full px-4 py-3 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed font-medium"
+                    disabled
+                  >
+                    Crear Pedido
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-2 md:space-y-3">
                   {carrito.map((item) => (
@@ -341,10 +364,11 @@ export default function NuevoPedidoPage() {
 
                   <button
                     type="submit"
-                    className="w-full mt-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                    disabled={guardando}
+                    className="w-full mt-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiPrinter className="w-5 h-5" />
-                    Crear e Imprimir
+                    {guardando ? 'Guardando...' : 'Crear e Imprimir'}
                   </button>
                 </div>
               )}

@@ -82,3 +82,21 @@ export interface ReportePeriodo {
   balance: number;
   cantidadPedidos: number;
 }
+
+export interface FacturaImpresa {
+  $id?: string;
+  pedidoId: string;
+  numeroFactura: string;
+  cliente: string;
+  total: number;
+  contenidoHtml?: string;
+  impresoEn?: string;
+  createdAt?: string;
+}
+
+export interface DatosGrafica {
+  fecha: string;
+  ingresos: number;
+  egresos: number;
+  balance: number;
+}

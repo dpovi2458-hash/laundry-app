@@ -68,6 +68,18 @@ CREATE TABLE IF NOT EXISTS configuracion (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 6. TABLA FACTURAS IMPRESAS (historial de impresiones)
+CREATE TABLE IF NOT EXISTS facturas_impresas (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  pedido_id UUID REFERENCES pedidos(id) ON DELETE CASCADE,
+  numero_factura VARCHAR(50) NOT NULL,
+  cliente VARCHAR(255) NOT NULL,
+  total DECIMAL(10,2) NOT NULL,
+  contenido_html TEXT, -- opcional: guardar el HTML de la factura
+  impreso_en TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- =============================================
 -- HABILITAR ROW LEVEL SECURITY (RLS)
 -- =============================================
@@ -78,6 +90,7 @@ ALTER TABLE pedidos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ingresos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE egresos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracion ENABLE ROW LEVEL SECURITY;
+ALTER TABLE facturas_impresas ENABLE ROW LEVEL SECURITY;
 
 -- =============================================
 -- POLÍTICAS DE ACCESO PÚBLICO
@@ -97,6 +110,9 @@ CREATE POLICY "Acceso público egresos" ON egresos FOR ALL USING (true) WITH CHE
 
 -- Configuración - Acceso público completo
 CREATE POLICY "Acceso público configuracion" ON configuracion FOR ALL USING (true) WITH CHECK (true);
+
+-- Facturas Impresas - Acceso público completo
+CREATE POLICY "Acceso público facturas_impresas" ON facturas_impresas FOR ALL USING (true) WITH CHECK (true);
 
 -- =============================================
 -- DATOS INICIALES (OPCIONAL)

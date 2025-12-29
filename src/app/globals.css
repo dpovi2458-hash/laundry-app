@@ -17,12 +17,50 @@ body {
     )
     rgb(var(--background-start-rgb));
   min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hacer inputs más grandes en móvil para mejor touch */
+@media (max-width: 768px) {
+  input, select, textarea, button {
+    font-size: 16px !important; /* Previene zoom en iOS */
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Animación de slide up para modales móviles */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Animación de fade in */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
 }
 
 /* Estilos para impresión de factura - 4 facturas por hoja A4 */
@@ -103,4 +141,18 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
+}
+
+/* Mejoras táctiles para móvil */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Safe area para dispositivos con notch */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0);
 }
