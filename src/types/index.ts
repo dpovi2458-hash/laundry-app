@@ -14,6 +14,7 @@ export interface Pedido {
   $id?: string;
   numeroFactura: string;
   cliente: string;
+  clienteId?: string; // Referencia a cliente recurrente
   telefono?: string;
   servicios: ServicioPedido[];
   subtotal: number;
@@ -24,6 +25,9 @@ export interface Pedido {
   notas?: string;
   fechaRecepcion: string;
   fechaEntrega?: string;
+  horaEntrega?: string;
+  notificado?: boolean; // Si ya se envió WhatsApp
+  puntosFidelidad?: number;
   createdAt?: string;
 }
 
@@ -33,6 +37,21 @@ export interface ServicioPedido {
   cantidad: number;
   precioUnitario: number;
   subtotal: number;
+}
+
+// NUEVO: Cliente recurrente
+export interface Cliente {
+  $id?: string;
+  nombre: string;
+  telefono: string;
+  email?: string;
+  direccion?: string;
+  notas?: string;
+  puntosFidelidad: number;
+  totalPedidos: number;
+  totalGastado: number;
+  ultimoPedido?: string;
+  createdAt?: string;
 }
 
 export interface Ingreso {
@@ -62,9 +81,18 @@ export interface Configuracion {
   ruc?: string;
   direccion: string;
   telefono: string;
+  whatsapp?: string; // NUEVO: WhatsApp del negocio
   email?: string;
   moneda: string;
   mensajeFactura?: string;
+  // Configuración de fidelización
+  puntosEnabled?: boolean;
+  puntosPorSol?: number; // Puntos por cada sol gastado
+  solPorPunto?: number; // Valor de cada punto en soles
+  // WhatsApp templates
+  whatsappMsgPendiente?: string;
+  whatsappMsgListo?: string;
+  whatsappMsgEntregado?: string;
 }
 
 export interface ResumenFinanciero {
@@ -99,4 +127,12 @@ export interface DatosGrafica {
   ingresos: number;
   egresos: number;
   balance: number;
+}
+
+// NUEVO: Estadísticas de cliente
+export interface ClienteStats {
+  servicioFavorito: string;
+  frecuenciaVisita: string; // "semanal", "quincenal", "mensual"
+  diasDesdeUltimoVisita: number;
+  promedioTicket: number;
 }

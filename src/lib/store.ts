@@ -1,6 +1,6 @@
 // Store híbrido: Supabase cloud + localStorage como fallback
 
-import { Servicio, Pedido, Ingreso, Egreso, Configuracion, FacturaImpresa } from '@/types';
+import { Servicio, Pedido, Ingreso, Egreso, Configuracion, FacturaImpresa, Cliente } from '@/types';
 import * as supabaseLib from './supabase';
 
 // ============== CONFIGURACIÓN ==============
@@ -16,6 +16,7 @@ const STORAGE_KEYS = {
   CONFIG: 'lavanderia_config',
   CONTADOR_FACTURA: 'lavanderia_contador_factura',
   FACTURAS_IMPRESAS: 'lavanderia_facturas_impresas',
+  CLIENTES: 'lavanderia_clientes',
 };
 
 // Datos iniciales de servicios
@@ -529,5 +530,91 @@ export async function getDatosGraficaMensual(year: number, month: number) {
       balance: ingresosDelDia - egresosDelDia,
       balanceAcumulado,
     };
+  });
+}
+
+// ============== CLIENTES ==============
+export async function getClientes(): Promise<Cliente[]> {
+  return getFromStorage<Cliente[]>(STORAGE_KEYS.CLIENTES, []);
+}
+
+export async function getClienteById(id: string): Promise<Cliente | undefined> {
+  const clientes = await getClientes();
+  return clientes.find(c => c.$id === id);
+}
+
+export async function getClienteByTelefono(telefono: string): Promise<Cliente | undefined> {
+  const clientes = await getClientes();
+  const telefonoLimpio = telefono.replace(/\D/g, '');
+  return clientes.find(c => c.telefono.replace(/\D/g, '') === telefonoLimpio);
+}
+
+export async function createCliente(cliente: Omit<Cliente, '$id' | 'createdAt'>): Promise<Cliente> {
+  const clientes = getFromStorage<Cliente[]>(STORAGE_KEYS.CLIENTES, []);
+  const nuevo: Cliente = {
+    ...cliente,
+    $id: generateId(),
+    createdAt: new Date().toISOString(),
+  };
+  clientes.push(nuevo);
+  saveToStorage(STORAGE_KEYS.CLIENTES, clientes);
+  return nuevo;
+}
+
+export async function updateCliente(id: string, data: Partial<Cliente>): Promise<Cliente | null> {
+  const clientes = getFromStorage<Cliente[]>(STORAGE_KEYS.CLIENTES, []);
+  const index = clientes.findIndex(c => c.$id === id);
+  if (index === -1) return null;
+  clientes[index] = { ...clientes[index], ...data };
+  saveToStorage(STORAGE_KEYS.CLIENTES, clientes);
+  return clientes[index];
+}
+
+export async function deleteCliente(id: string): Promise<boolean> {
+  const clientes = getFromStorage<Cliente[]>(STORAGE_KEYS.CLIENTES, []);
+  const filtered = clientes.filter(c => c.$id !== id);
+  if (filtered.length === clientes.length) return false;
+  saveToStorage(STORAGE_KEYS.CLIENTES, filtered);
+  return true;
+}
+
+// Actualizar estadísticas del cliente después de un pedido
+export async function actualizarEstadisticasCliente(
+  clienteId: string,
+  montoPedido: number,
+  puntosGanados: number
+): Promise<void> {
+  const cliente = await getClienteById(clienteId);
+  if (!cliente) return;
+  
+  await updateCliente(clienteId, {
+    totalPedidos: cliente.totalPedidos + 1,
+    totalGastado: cliente.totalGastado + montoPedido,
+    puntosFidelidad: cliente.puntosFidelidad + puntosGanados,
+    ultimoPedido: new Date().toISOString(),
+  });
+}
+
+// Buscar o crear cliente por teléfono (para autocomplete en nuevo pedido)
+export async function buscarOCrearCliente(
+  nombre: string,
+  telefono: string
+): Promise<Cliente> {
+  const existente = await getClienteByTelefono(telefono);
+  if (existente) {
+    // Actualizar nombre si es diferente
+    if (existente.nombre !== nombre) {
+      await updateCliente(existente.$id!, { nombre });
+    }
+    return existente;
+  }
+  
+  // Crear nuevo cliente
+  return createCliente({
+    nombre,
+    telefono,
+    puntosFidelidad: 0,
+    totalPedidos: 0,
+    totalGastado: 0,
   });
 }

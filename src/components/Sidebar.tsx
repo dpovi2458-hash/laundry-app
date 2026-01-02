@@ -7,12 +7,10 @@ import {
   FiHome, 
   FiSettings, 
   FiDollarSign, 
-  FiFileText, 
-  FiPieChart, 
   FiMenu, 
   FiX,
   FiShoppingBag,
-  FiPlusCircle
+  FiPlusCircle,
 } from 'react-icons/fi';
 import { getConfiguracionSync } from '@/lib/store';
 
@@ -23,105 +21,114 @@ interface NavItem {
   highlight?: boolean;
 }
 
+// Solo las opciones esenciales para el dueño
 const navItems: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: <FiHome className="w-5 h-5" /> },
-  { href: '/nuevo-pedido', label: 'Nuevo Pedido', icon: <FiPlusCircle className="w-5 h-5" />, highlight: true },
-  { href: '/pedidos', label: 'Pedidos', icon: <FiShoppingBag className="w-5 h-5" /> },
-  { href: '/finanzas', label: 'Finanzas', icon: <FiDollarSign className="w-5 h-5" /> },
-  { href: '/reportes', label: 'Reportes', icon: <FiPieChart className="w-5 h-5" /> },
-  { href: '/facturas', label: 'Facturas', icon: <FiFileText className="w-5 h-5" /> },
-  { href: '/servicios', label: 'Servicios', icon: <FiSettings className="w-5 h-5" /> },
+  { href: '/', label: 'Inicio', icon: <FiHome className="w-5 h-5" /> },
+  { href: '/nuevo-pedido', label: '+ Nuevo Pedido', icon: <FiPlusCircle className="w-5 h-5" />, highlight: true },
+  { href: '/pedidos', label: 'Mis Pedidos', icon: <FiShoppingBag className="w-5 h-5" /> },
+  { href: '/finanzas', label: 'Dinero', icon: <FiDollarSign className="w-5 h-5" /> },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [nombreNegocio, setNombreNegocio] = useState('Lavandería');
+  const [nombreNegocio, setNombreNegocio] = useState('Mi Lavandería');
 
   useEffect(() => {
     const config = getConfiguracionSync();
     setNombreNegocio(config.nombreNegocio);
   }, []);
 
-  // Cerrar el menú al cambiar de ruta
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
 
   return (
     <>
-      {/* Mobile Header Bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white shadow-sm z-40 flex items-center justify-between px-4 safe-area-top">
-        <div className="flex items-center">
+      {/* Barra superior móvil - Simple */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-40 flex items-center justify-between px-4 safe-area-top">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 -ml-2 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            className="p-2 -ml-2 rounded-xl hover:bg-slate-100 transition-colors"
           >
             {isOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
           </button>
-          <h1 className="ml-2 font-bold text-gray-800 truncate">{nombreNegocio}</h1>
+          <span className="font-bold text-slate-800">{nombreNegocio}</span>
         </div>
-        {/* Botón rápido de nuevo pedido en móvil */}
+        
+        {/* Botón grande de nuevo pedido */}
         <Link
           href="/nuevo-pedido"
-          className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium shadow-lg shadow-indigo-500/20"
         >
           <FiPlusCircle className="w-5 h-5" />
+          <span className="hidden sm:inline">Nuevo</span>
         </Link>
       </div>
 
-      {/* Overlay con animación */}
+      {/* Overlay */}
       <div
-        className={`lg:hidden fixed inset-0 bg-black/50 z-30 transition-opacity duration-300 ${
+        className={`lg:hidden fixed inset-0 bg-black/30 z-30 transition-opacity ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsOpen(false)}
       />
 
-      {/* Sidebar */}
+      {/* Menú lateral */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-40 transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-slate-200 z-40 transform transition-transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } lg:w-64`}
+        } lg:w-60`}
       >
-        <div className="p-4 lg:p-6 border-b bg-gradient-to-r from-blue-600 to-indigo-600">
-          <h1 className="text-lg lg:text-xl font-bold text-white truncate">{nombreNegocio}</h1>
-          <p className="text-xs lg:text-sm text-blue-100">Panel de Control</p>
+        {/* Logo */}
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+              🧺
+            </div>
+            <div>
+              <h1 className="font-bold text-slate-900">{nombreNegocio}</h1>
+              <p className="text-xs text-slate-500">Panel Simple</p>
+            </div>
+          </div>
         </div>
 
-        <nav className="p-3 lg:p-4 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+        {/* Navegación principal - SIMPLE */}
+        <nav className="p-3 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all active:scale-[0.98] ${
+                className={`flex items-center gap-3 px-4 py-4 rounded-xl transition-all ${
                   item.highlight && !isActive
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                     : isActive
-                    ? 'bg-blue-50 text-blue-600 font-semibold'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-indigo-50 text-indigo-600 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-50'
                 }`}
               >
                 {item.icon}
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium text-base">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-4 border-t bg-white safe-area-bottom">
+        {/* Configuración al final */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-slate-100">
           <Link
             href="/configuracion"
-            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all active:scale-[0.98] ${
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
               pathname === '/configuracion'
-                ? 'bg-blue-50 text-blue-600 font-semibold'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-indigo-50 text-indigo-600'
+                : 'text-slate-500 hover:bg-slate-50'
             }`}
           >
             <FiSettings className="w-5 h-5" />
-            <span className="font-medium">Configuración</span>
+            <span className="font-medium">Ajustes</span>
           </Link>
         </div>
       </aside>

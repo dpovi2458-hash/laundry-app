@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import { FiPlus, FiMinus, FiTrash2, FiPrinter } from 'react-icons/fi';
+import { FiPlus, FiMinus, FiTrash2, FiCheck, FiArrowLeft } from 'react-icons/fi';
 import { getServicios, createPedido, createIngreso, getConfiguracion } from '@/lib/store';
 import { formatMoneda, getHoy } from '@/lib/utils';
 import { Servicio, ServicioPedido } from '@/types';
+import Link from 'next/link';
 
 export default function NuevoPedidoPage() {
   const router = useRouter();
@@ -16,9 +17,6 @@ export default function NuevoPedidoPage() {
   const [cliente, setCliente] = useState('');
   const [telefono, setTelefono] = useState('');
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'yape' | 'plin' | 'transferencia'>('efectivo');
-  const [descuento, setDescuento] = useState(0);
-  const [notas, setNotas] = useState('');
-  const [fechaEntrega, setFechaEntrega] = useState('');
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
@@ -58,7 +56,6 @@ export default function NuevoPedidoPage() {
       eliminarDelCarrito(servicioId);
       return;
     }
-    
     setCarrito(carrito.map(item =>
       item.servicioId === servicioId
         ? { ...item, cantidad, subtotal: cantidad * item.precioUnitario }
@@ -70,19 +67,15 @@ export default function NuevoPedidoPage() {
     setCarrito(carrito.filter(item => item.servicioId !== servicioId));
   }
 
-  const subtotal = carrito.reduce((sum, item) => sum + item.subtotal, 0);
-  const total = subtotal - descuento;
+  const total = carrito.reduce((sum, item) => sum + item.subtotal, 0);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    
+  async function handleSubmit() {
     if (carrito.length === 0) {
-      alert('Agrega al menos un servicio');
+      alert('⚠️ Agrega al menos un servicio');
       return;
     }
-
     if (!cliente.trim()) {
-      alert('Ingresa el nombre del cliente');
+      alert('⚠️ Escribe el nombre del cliente');
       return;
     }
 
@@ -93,288 +86,206 @@ export default function NuevoPedidoPage() {
         cliente: cliente.trim(),
         telefono: telefono.trim(),
         servicios: carrito,
-        subtotal,
-        descuento,
+        subtotal: total,
+        descuento: 0,
         total,
         estado: 'pendiente',
         metodoPago,
-        notas: notas.trim(),
         fechaRecepcion: getHoy(),
-        fechaEntrega: fechaEntrega || undefined,
       });
 
-      if (!pedido || !pedido.$id) {
-        throw new Error('No se pudo crear el pedido');
-      }
-
-      // Registrar ingreso
       await createIngreso({
         concepto: `Pedido ${pedido.numeroFactura} - ${cliente}`,
         monto: total,
         categoria: 'pedido',
-        pedidoId: pedido.$id,
+        pedidoId: pedido.$id!,
         fecha: getHoy(),
       });
 
       router.push(`/pedidos/${pedido.$id}?print=true`);
     } catch (error) {
-      console.error('Error al crear pedido:', error);
-      alert('Error al crear el pedido. Por favor intenta de nuevo.');
+      console.error('Error:', error);
+      alert('❌ Error al crear pedido. Intenta de nuevo.');
       setGuardando(false);
-    }
-  }
-
-  function getUnidadLabel(servicio: Servicio): string {
-    switch (servicio.unidad) {
-      case 'kg': return '/kg';
-      case 'prenda': return '/prenda';
-      case 'unidad': return '/unidad';
-      default: return '';
     }
   }
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 md:space-y-6">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Nuevo Pedido</h1>
-          <p className="text-sm text-gray-500">Registra un nuevo pedido</p>
+      <div className="pb-32">
+        {/* Header simple */}
+        <div className="flex items-center gap-3 mb-4">
+          <Link href="/" className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200">
+            <FiArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-xl font-bold text-slate-900">Nuevo Pedido</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col lg:grid lg:grid-cols-3 gap-4 md:gap-6">
-          {/* Carrito / Resumen - PRIMERO en móvil cuando hay items */}
-          {carrito.length > 0 && (
-            <div className="lg:hidden order-first">
-              <div className="bg-blue-50 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-blue-700">{carrito.length} servicio(s)</p>
-                    <p className="text-xl font-bold text-blue-800">{formatMoneda(total, moneda)}</p>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={guardando}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <FiPrinter className="w-4 h-4" />
-                    {guardando ? 'Guardando...' : 'Crear'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Cliente - Lo primero y más simple */}
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 mb-4">
+          <label className="block text-sm font-medium text-slate-600 mb-2">
+            👤 Nombre del cliente
+          </label>
+          <input
+            type="text"
+            value={cliente}
+            onChange={(e) => setCliente(e.target.value)}
+            placeholder="Ej: María García"
+            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-lg focus:border-indigo-500 focus:outline-none"
+          />
+          
+          <label className="block text-sm font-medium text-slate-600 mb-2 mt-4">
+            📱 Teléfono (opcional)
+          </label>
+          <input
+            type="tel"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            placeholder="999 999 999"
+            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-lg focus:border-indigo-500 focus:outline-none"
+          />
+        </div>
 
-          {/* Servicios disponibles */}
-          <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
-            <div className="bg-white rounded-xl shadow-sm p-3 md:p-4">
-              <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Servicios</h2>
-              <div className="grid grid-cols-1 gap-2 md:gap-3">
-                {servicios.map((servicio) => (
+        {/* Servicios - Botones grandes y claros */}
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 mb-4">
+          <label className="block text-sm font-medium text-slate-600 mb-3">
+            🧺 ¿Qué servicio necesita?
+          </label>
+          <div className="grid grid-cols-1 gap-2">
+            {servicios.map((servicio) => {
+              const enCarrito = carrito.find(item => item.servicioId === servicio.$id);
+              return (
+                <button
+                  key={servicio.$id}
+                  type="button"
+                  onClick={() => agregarAlCarrito(servicio)}
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all active:scale-[0.98] ${
+                    enCarrito 
+                      ? 'border-indigo-500 bg-indigo-50' 
+                      : 'border-slate-200 hover:border-indigo-300'
+                  }`}
+                >
+                  <div className="text-left">
+                    <p className="font-semibold text-slate-900">{servicio.nombre}</p>
+                    <p className="text-sm text-slate-500">{servicio.descripcion}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-indigo-600 text-lg">
+                      {formatMoneda(servicio.precio, moneda)}
+                    </p>
+                    {enCarrito && (
+                      <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full">
+                        ×{enCarrito.cantidad}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Resumen del carrito - Solo si hay items */}
+        {carrito.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 mb-4">
+            <label className="block text-sm font-medium text-slate-600 mb-3">
+              📋 Resumen del pedido
+            </label>
+            <div className="space-y-2">
+              {carrito.map((item) => (
+                <div key={item.servicioId} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-800">{item.servicioNombre}</p>
+                    <p className="text-sm text-slate-500">
+                      {formatMoneda(item.precioUnitario, moneda)} c/u
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => actualizarCantidad(item.servicioId, item.cantidad - 1)}
+                      className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center active:bg-slate-300"
+                    >
+                      <FiMinus className="w-4 h-4" />
+                    </button>
+                    <span className="w-8 text-center font-bold">{item.cantidad}</span>
+                    <button
+                      onClick={() => actualizarCantidad(item.servicioId, item.cantidad + 1)}
+                      className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center active:bg-slate-300"
+                    >
+                      <FiPlus className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => eliminarDelCarrito(item.servicioId)}
+                      className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center active:bg-red-200"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Método de pago */}
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              <label className="block text-sm font-medium text-slate-600 mb-2">
+                💳 ¿Cómo paga?
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { value: 'efectivo', label: '💵', name: 'Efectivo' },
+                  { value: 'yape', label: '📱', name: 'Yape' },
+                  { value: 'plin', label: '📲', name: 'Plin' },
+                  { value: 'transferencia', label: '🏦', name: 'Transf.' },
+                ].map((metodo) => (
                   <button
-                    key={servicio.$id}
-                    type="button"
-                    onClick={() => agregarAlCarrito(servicio)}
-                    className="flex items-center justify-between p-3 md:p-4 border-2 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-colors text-left active:bg-blue-100"
+                    key={metodo.value}
+                    onClick={() => setMetodoPago(metodo.value as typeof metodoPago)}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      metodoPago === metodo.value
+                        ? 'border-indigo-500 bg-indigo-50'
+                        : 'border-slate-200'
+                    }`}
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{servicio.nombre}</p>
-                      <p className="text-xs md:text-sm text-gray-500 truncate">{servicio.descripcion}</p>
-                    </div>
-                    <div className="text-right ml-2 flex-shrink-0">
-                      <p className="font-bold text-blue-600">
-                        {formatMoneda(servicio.precio, moneda)}
-                      </p>
-                      <p className="text-xs text-gray-400">{getUnidadLabel(servicio)}</p>
-                    </div>
+                    <span className="text-xl">{metodo.label}</span>
+                    <p className="text-xs mt-1">{metodo.name}</p>
                   </button>
                 ))}
               </div>
-              
-              {servicios.length === 0 && (
-                <p className="text-gray-500 text-center py-6 text-sm">
-                  No hay servicios activos.
-                </p>
-              )}
-            </div>
-
-            {/* Datos del cliente */}
-            <div className="bg-white rounded-xl shadow-sm p-3 md:p-4">
-              <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Cliente</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                <div className="sm:col-span-2 md:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre *
-                  </label>
-                  <input
-                    type="text"
-                    value={cliente}
-                    onChange={(e) => setCliente(e.target.value)}
-                    className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                    placeholder="Nombre del cliente"
-                    required
-                  />
-                </div>
-                <div className="sm:col-span-2 md:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                    placeholder="999 999 999"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pago
-                  </label>
-                  <select
-                    value={metodoPago}
-                    onChange={(e) => setMetodoPago(e.target.value as typeof metodoPago)}
-                    className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                  >
-                    <option value="efectivo">Efectivo</option>
-                    <option value="yape">Yape</option>
-                    <option value="plin">Plin</option>
-                    <option value="transferencia">Transferencia</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Entrega
-                  </label>
-                  <input
-                    type="date"
-                    value={fechaEntrega}
-                    onChange={(e) => setFechaEntrega(e.target.value)}
-                    className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                    min={getHoy()}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notas
-                  </label>
-                  <textarea
-                    value={notas}
-                    onChange={(e) => setNotas(e.target.value)}
-                    className="w-full px-3 py-3 md:py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                    placeholder="Notas adicionales..."
-                    rows={2}
-                  />
-                </div>
-              </div>
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Carrito / Resumen - Desktop */}
-          <div className="lg:col-span-1 order-3 lg:order-2">
-            <div className="bg-white rounded-xl shadow-sm p-3 md:p-4 lg:sticky lg:top-4">
-              <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Resumen</h2>
-              
-              {carrito.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-gray-500 text-sm mb-4">
-                    Toca un servicio para agregar
-                  </p>
-                  <button
-                    type="submit"
-                    className="w-full px-4 py-3 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed font-medium"
-                    disabled
-                  >
-                    Crear Pedido
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2 md:space-y-3">
-                  {carrito.map((item) => (
-                    <div key={item.servicioId} className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1 min-w-0 mr-2">
-                        <p className="font-medium text-sm text-gray-900 truncate">{item.servicioNombre}</p>
-                        <p className="text-xs text-gray-500">
-                          {formatMoneda(item.precioUnitario, moneda)} × {item.cantidad}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => actualizarCantidad(item.servicioId, item.cantidad - 1)}
-                          className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400"
-                        >
-                          <FiMinus className="w-4 h-4" />
-                        </button>
-                        <input
-                          type="number"
-                          value={item.cantidad}
-                          onChange={(e) => actualizarCantidad(item.servicioId, parseFloat(e.target.value) || 0)}
-                          className="w-12 text-center border rounded-lg py-1 text-sm"
-                          step="0.5"
-                          min="0"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => actualizarCantidad(item.servicioId, item.cantidad + 1)}
-                          className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400"
-                        >
-                          <FiPlus className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => eliminarDelCarrito(item.servicioId)}
-                          className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg"
-                        >
-                          <FiTrash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  <hr className="my-2" />
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Subtotal</span>
-                      <span className="font-medium">{formatMoneda(subtotal, moneda)}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm text-gray-600">Descuento</label>
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm">{moneda}</span>
-                        <input
-                          type="number"
-                          value={descuento}
-                          onChange={(e) => setDescuento(parseFloat(e.target.value) || 0)}
-                          className="w-16 text-right border rounded-lg py-1 px-2 text-sm"
-                          min="0"
-                          step="0.50"
-                        />
-                      </div>
-                    </div>
-
-                    <hr />
-
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      <span className="text-blue-600">{formatMoneda(total, moneda)}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={guardando}
-                    className="w-full mt-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <FiPrinter className="w-5 h-5" />
-                    {guardando ? 'Guardando...' : 'Crear e Imprimir'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </form>
+      {/* Botón fijo de crear pedido */}
+      <div className="fixed bottom-0 left-0 right-0 lg:left-60 bg-white border-t border-slate-200 p-4 safe-area-bottom">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-slate-600">Total a cobrar:</span>
+          <span className="text-2xl font-bold text-indigo-600">
+            {formatMoneda(total, moneda)}
+          </span>
+        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={guardando || carrito.length === 0}
+          className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
+            carrito.length === 0
+              ? 'bg-slate-200 text-slate-400'
+              : 'bg-indigo-600 text-white active:scale-[0.98] shadow-lg shadow-indigo-500/30'
+          }`}
+        >
+          {guardando ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            <>
+              <FiCheck className="w-5 h-5" />
+              Crear Pedido
+            </>
+          )}
+        </button>
       </div>
     </DashboardLayout>
   );

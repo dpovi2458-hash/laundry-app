@@ -3,21 +3,67 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 241, 245, 249;
+  /* Paleta Premium - Índigo Oscuro */
+  --color-primary: 99 102 241; /* indigo-500 */
+  --color-primary-dark: 79 70 229; /* indigo-600 */
+  --color-secondary: 168 85 247; /* purple-500 */
+  --color-accent: 34 211 238; /* cyan-400 */
+  --color-success: 34 197 94; /* green-500 */
+  --color-warning: 251 191 36; /* amber-400 */
+  --color-danger: 239 68 68; /* red-500 */
+  
+  --bg-base: 248 250 252; /* slate-50 */
+  --bg-card: 255 255 255;
+  --text-primary: 15 23 42; /* slate-900 */
+  --text-secondary: 100 116 139; /* slate-500 */
+  
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+.dark {
+  --bg-base: 15 23 42; /* slate-900 */
+  --bg-card: 30 41 59; /* slate-800 */
+  --text-primary: 248 250 252;
+  --text-secondary: 148 163 184;
+  
+  --glass-bg: rgba(30, 41, 59, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  background: rgb(var(--bg-base));
+  color: rgb(var(--text-primary));
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glass morphism */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+/* Premium Gradient Backgrounds */
+.gradient-primary {
+  background: linear-gradient(135deg, rgb(var(--color-primary)), rgb(var(--color-secondary)));
+}
+
+.gradient-dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+.gradient-mesh {
+  background: 
+    radial-gradient(at 40% 20%, rgba(99, 102, 241, 0.15) 0, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(168, 85, 247, 0.1) 0, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(34, 211, 238, 0.1) 0, transparent 50%),
+    rgb(var(--bg-base));
 }
 
 /* Hacer inputs más grandes en móvil para mejor touch */
@@ -33,7 +79,7 @@ body {
   }
 }
 
-/* Animación de slide up para modales móviles */
+/* Animaciones Premium */
 @keyframes slide-up {
   from {
     transform: translateY(100%);
@@ -45,22 +91,149 @@ body {
   }
 }
 
-.animate-slide-up {
-  animation: slide-up 0.3s ease-out;
-}
-
-/* Animación de fade in */
-@keyframes fade-in {
+@keyframes slide-in-right {
   from {
+    transform: translateX(100%);
     opacity: 0;
   }
   to {
+    transform: translateX(0);
     opacity: 1;
   }
 }
 
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Stagger animations */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+
+/* Premium Button Styles */
+.btn-primary {
+  @apply px-4 py-3 rounded-xl font-medium text-white transition-all duration-200;
+  background: linear-gradient(135deg, rgb(var(--color-primary)), rgb(var(--color-primary-dark)));
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Premium Card Styles */
+.card {
+  @apply bg-white rounded-2xl shadow-sm border border-gray-100/80;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+}
+
+.card-dark {
+  @apply rounded-2xl;
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Premium Input Styles */
+.input-premium {
+  @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white/80 transition-all duration-200;
+}
+
+.input-premium:focus {
+  @apply border-indigo-500 ring-4 ring-indigo-500/10 outline-none;
+}
+
+/* Status badges */
+.badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+}
+
+.badge-pendiente {
+  @apply bg-amber-100 text-amber-800 border border-amber-200;
+}
+
+.badge-en_proceso {
+  @apply bg-blue-100 text-blue-800 border border-blue-200;
+}
+
+.badge-listo {
+  @apply bg-emerald-100 text-emerald-800 border border-emerald-200;
+}
+
+.badge-entregado {
+  @apply bg-slate-100 text-slate-600 border border-slate-200;
 }
 
 /* Estilos para impresión de factura - 4 facturas por hoja A4 */
@@ -125,22 +298,21 @@ body {
 
 /* Scrollbar personalizado */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8;
-  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: rgba(99, 102, 241, 0.5);
 }
 
 /* Mejoras táctiles para móvil */
@@ -155,4 +327,29 @@ body {
 
 .safe-area-top {
   padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Número flotante animado */
+.number-animate {
+  display: inline-block;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* WhatsApp button */
+.btn-whatsapp {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white transition-all duration-200;
+  background: linear-gradient(135deg, #25D366, #128C7E);
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+}
+
+.btn-whatsapp:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
 }
